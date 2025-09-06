@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>實習生資料線上填報系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+        /* 當 contenteditable 的儲存格是空的，顯示提示文字 */
+        [contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af; /* Tailwind gray-400 */
+            pointer-events: none;
+            display: block;
+        }
+        /* 表格滾動條樣式優化 */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9; /* slate-100 */
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* slate-400 */
+        }
+        /* 新增：試算表風格的格線 */
+        .spreadsheet-table th, .spreadsheet-table td {
+            border: 1px solid #e2e8f0; /* slate-200 */
+        }
+        .spreadsheet-table thead th {
+            border-bottom-width: 2px;
+            border-bottom-color: #cbd5e1; /* slate-300 */
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-10 space-y-8">
+        <!-- 標題與說明 -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-slate-800">實習生資料線上填報系統</h1>
+        </div>
+
+        <!-- 學校選擇 -->
+        <div class="max-w-md mx-auto">
+            <label for="school-select" class="block text-sm font-medium text-slate-700 mb-2">請選擇您的學校：</label>
+            <select id="school-select" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="">-- 請選擇 --</option>
+            </select>
+        </div>
+        
+        <!-- 新增：填寫說明 -->
+        <div class="max-w-5xl mx-auto p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 flex items-start gap-4 rounded-r-lg">
+            <div class="flex-shrink-0">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div>
+                <h4 class="font-bold">填寫說明</h4>
+                <p class="text-sm mt-1">您可以直接在下方的表格中輸入資料，或從 <strong>Excel、Google 試算表</strong> 等來源複製內容 (Ctrl+C / Cmd+C)，然後點選表格中您想開始貼上的儲存格並貼上 (Ctrl+V / Cmd+V)，系統將會自動為您填入多筆資料。</p>
+            </div>
+        </div>
+
+
+        <!-- 表格操作按鈕 -->
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
+            <button id="add-row-btn" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-1 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                新增一列 (最多20列)
+            </button>
+            <button id="delete-row-btn" class="px-4 py-2 bg-rose-500 text-white font-semibold rounded-lg shadow-md hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-opacity-75 transition-colors">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mt-1 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                刪除最後一列
+            </button>
+        </div>
+
+        <!-- 資料填報表格 -->
+        <div class="table-container overflow-x-auto border border-slate-200 rounded-lg">
+            <table class="w-full min-w-[1200px] text-sm text-left text-slate-500 spreadsheet-table">
+                <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                    <tr>
+                        <th scope="col" class="px-2 py-3 w-[40px] text-center">#</th>
+                        <th scope="col" class="px-4 py-3 w-1/12">實習生姓名</th>
+                        <th scope="col" class="px-4 py-3 w-2/12">原師培畢業學校</th>
+                        <th scope="col" class="px-4 py-3 w-1/12">實習科別</th>
+                        <th scope="col" class="px-4 py-3 w-2/12">Email</th>
+                        <th scope="col" class="px-4 py-3 w-1/12">電話</th>
+                        <th scope="col" class="px-4 py-3 w-1/12">輔導教師(教學)</th>
+                        <th scope="col" class="px-4 py-3 w-1/12">輔導教師(導師)</th>
+                        <th scope="col" class="px-4 py-3 w-2/12">輔導教師(行政)</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    <!-- JavaScript 會動態生成表格列 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 送出按鈕 -->
+        <div class="text-center pt-4">
+            <button id="submit-btn" class="w-full md:w-1/2 lg:w-1/3 px-6 py-3 bg-emerald-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
+                <span id="submit-btn-text">確認送出資料</span>
+                <div id="submit-spinner" class="hidden animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 訊息提示 Modal -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full">
+                    <!-- Icon will be set by JS -->
+                </div>
+                <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900 mt-2"></h3>
+                <div class="mt-2 px-7 py-3">
+                    <p id="modal-message" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="modal-close-btn" class="px-4 py-2 bg-indigo-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        關閉
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 設定區 ---
+    const GOOGLE_APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; // !!! 重要：請替換成您的 Google Apps Script 網址
+
+    const schools = [
+        '臺北市立大安國民中學', '臺北市立中正國民中學', '臺北市立仁愛國民中學',
+        '臺北市立金華國民中學', '臺北市立龍門國民中學', '新北市立中山國民中學',
+        '新北市立板橋國民中學', '新北市立江翠國民中學', '新北市立海山國民中學',
+        '桃園市立桃園國民中學', '桃園市立青溪國民中學', '桃園市立慈文國民中學'
+    ]; // 請在此處修改為您的12所學校全稱
+
+    const MAX_ROWS = 20;
+
+    const tableHeaders = [
+        { key: 'internName', placeholder: '王小明' },
+        { key: 'university', placeholder: '國立臺灣師範大學' },
+        { key: 'subject', placeholder: '國文' },
+        { key: 'email', placeholder: 'student@email.com' },
+        { key: 'phone', placeholder: '0912345678' },
+        { key: 'teachingMentor', placeholder: '陳老師' },
+        { key: 'homeroomMentor', placeholder: '林老師' },
+        { key: 'adminMentor', placeholder: '李主任' }
+    ];
+
+    // --- DOM 元素 ---
+    const schoolSelect = document.getElementById('school-select');
+    const tableBody = document.getElementById('data-table-body');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const deleteRowBtn = document.getElementById('delete-row-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const submitBtnText = document.getElementById('submit-btn-text');
+    const submitSpinner = document.getElementById('submit-spinner');
+    
+    // Modal elements
+    const messageModal = document.getElementById('message-modal');
+    const modalIcon = document.getElementById('modal-icon');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    // --- 函數 ---
+
+    // 初始化學校下拉選單
+    function populateSchools() {
+        schools.forEach(school => {
+            const option = document.createElement('option');
+            option.value = school;
+            option.textContent = school;
+            schoolSelect.appendChild(option);
+        });
+    }
+
+    // 更新所有行號
+    function updateRowNumbers() {
+        const rows = tableBody.rows;
+        for (let i = 0; i < rows.length; i++) {
+            const firstCell = rows[i].cells[0];
+            if(firstCell) {
+                firstCell.textContent = i + 1;
+            }
+        }
+    }
+
+    // 新增一列表格
+    function addRow() {
+        if (tableBody.rows.length >= MAX_ROWS) {
+            showModal('錯誤', `最多只能新增 ${MAX_ROWS} 筆資料。`, false);
+            return;
+        }
+        const tr = document.createElement('tr');
+        tr.className = 'bg-white';
+        
+        // 增加行號欄
+        const numTd = document.createElement('td');
+        numTd.className = 'px-2 py-3 text-center bg-slate-50 text-slate-500 font-medium';
+        tr.appendChild(numTd);
+
+        tableHeaders.forEach(header => {
+            const td = document.createElement('td');
+            td.className = 'px-4 py-3';
+            const div = document.createElement('div');
+            div.setAttribute('contenteditable', 'true');
+            div.setAttribute('data-placeholder', header.placeholder);
+            div.className = 'w-full outline-none focus:ring-2 focus:ring-indigo-300 rounded px-1 py-0.5';
+            td.appendChild(div);
+            tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+        updateRowNumbers();
+    }
+    
+    // 刪除最後一列表格
+    function deleteRow() {
+        if (tableBody.rows.length > 0) {
+            tableBody.deleteRow(tableBody.rows.length - 1);
+        } else {
+            showModal('提示', '目前沒有資料可以刪除。', true, 'info');
+        }
+    }
+
+    // 顯示 Modal 訊息
+    function showModal(title, message, isSuccess, type = '') {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+
+        modalIcon.innerHTML = ''; // Clear previous icon
+        modalIcon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full'; // Reset classes
+
+        if (isSuccess) {
+            modalIcon.classList.add('bg-green-100');
+            modalIcon.innerHTML = `<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+        } else if (type === 'info') {
+             modalIcon.classList.add('bg-blue-100');
+             modalIcon.innerHTML = `<svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+        } else {
+            modalIcon.classList.add('bg-red-100');
+            modalIcon.innerHTML = `<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+        }
+        
+        messageModal.classList.remove('hidden');
+    }
+    
+    // 關閉 Modal
+    function closeModal() {
+        messageModal.classList.add('hidden');
+    }
+
+    // 處理貼上事件
+    function handlePaste(e) {
+        // 只處理在 contenteditable div 中的貼上事件
+        if (!e.target.isContentEditable) return;
+
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        const rows = text.split(/\r?\n/).filter(row => row.trim() !== '');
+
+        const startCell = e.target;
+        const startTd = startCell.closest('td');
+        const startTr = startTd.closest('tr');
+        
+        const startRowIndex = Array.from(tableBody.children).indexOf(startTr);
+        const startCellIndex = Array.from(startTr.children).indexOf(startTd) - 1; // -1 for row number cell
+
+        rows.forEach((rowData, i) => {
+            const cells = rowData.split('\t');
+            const targetRowIndex = startRowIndex + i;
+            
+            let targetTr = tableBody.rows[targetRowIndex];
+            if (!targetTr) {
+                if (tableBody.rows.length < MAX_ROWS) {
+                    addRow();
+                    targetTr = tableBody.rows[targetRowIndex];
+                } else {
+                    return; 
+                }
+            }
+
+            cells.forEach((cellData, j) => {
+                const targetCellIndex = startCellIndex + j;
+                if (targetCellIndex < tableHeaders.length) {
+                    const targetTd = targetTr.cells[targetCellIndex + 1]; // +1 for row number cell
+                    if (targetTd && targetTd.firstElementChild) {
+                        targetTd.firstElementChild.innerText = cellData;
+                    }
+                }
+            });
+        });
+    }
+
+
+    // 送出資料
+    async function submitData() {
+        // 1. 驗證學校選擇
+        const selectedSchool = schoolSelect.value;
+        if (!selectedSchool) {
+            showModal('資料不完整', '請務必選擇您的學校名稱。', false);
+            return;
+        }
+
+        // 2. 收集表格資料
+        const internsData = [];
+        const rows = tableBody.getElementsByTagName('tr');
+
+        for (const row of rows) {
+            const tableCells = row.getElementsByTagName('td');
+            const intern = {};
+            let isRowEmpty = true;
+            
+            tableHeaders.forEach((header, index) => {
+                // index + 1 to skip row number cell
+                const cell = tableCells[index + 1]; 
+                if (cell && cell.firstElementChild) {
+                    const cellText = cell.firstElementChild.innerText.trim();
+                    intern[header.key] = cellText;
+                    if (cellText !== '') {
+                        isRowEmpty = false;
+                    }
+                } else {
+                    intern[header.key] = '';
+                }
+            });
+
+            if (!isRowEmpty) {
+                internsData.push(intern);
+            }
+        }
+        
+        // 3. 驗證是否有填寫資料
+        if (internsData.length === 0) {
+            showModal('資料不完整', '請至少填寫一筆實習生資料。', false);
+            return;
+        }
+
+        // 4. 準備要傳送的資料
+        const payload = {
+            timestamp: new Date().toISOString(),
+            school: selectedSchool,
+            interns: internsData
+        };
+        
+        // 5. 顯示處理中狀態
+        submitBtn.disabled = true;
+        submitBtnText.classList.add('hidden');
+        submitSpinner.classList.remove('hidden');
+
+        // --- 傳送到 Google Apps Script ---
+        try {
+            if (GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                console.log('--- 模擬送出 ---');
+                console.log('若已設定 Google Apps Script URL，此資料將會被傳送：');
+                console.log(JSON.stringify(payload, null, 2));
+                await new Promise(resolve => setTimeout(resolve, 1500)); 
+                showModal('模擬成功', '資料已成功送出！請檢查瀏覽器開發者工具(F12)的Console，查看將要傳送的資料結構。請記得替換程式碼中的URL以啟用真實傳送功能。', true);
+            } else {
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8', },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showModal('成功！', '您的資料已成功送出，感謝您的填報！', true);
+                } else {
+                    throw new Error(result.message || '發生未知的錯誤');
+                }
+            }
+        } catch (error) {
+            showModal('傳送失敗', `發生錯誤，請稍後再試或聯繫管理員。錯誤訊息：${error.message}`, false);
+            console.error('Error submitting data:', error);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtnText.classList.remove('hidden');
+            submitSpinner.classList.add('hidden');
+        }
+    }
+
+
+    // --- 事件監聽 ---
+    window.addEventListener('load', () => {
+        populateSchools();
+        addRow(); // 預設新增一列方便使用者開始
+        tableBody.addEventListener('paste', handlePaste);
+    });
+    
+    addRowBtn.addEventListener('click', addRow);
+    deleteRowBtn.addEventListener('click', deleteRow);
+    submitBtn.addEventListener('click', submitData);
+    modalCloseBtn.addEventListener('click', closeModal);
+
+</script>
+
+</body>
+</html>
+
