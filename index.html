@@ -137,13 +137,21 @@
 
 <script>
     // --- 設定區 ---
-    const GOOGLE_APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE'; // !!! 重要：請替換成您的 Google Apps Script 網址
+    const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzj0wjNlXGigLm-3FqsnRsMsf0D3ut7cgDF19M3nPOpivpvXD6u4Tkntg90wI4Y2zLjZA/exec'; // !!! 重要：請替換成您的 Google Apps Script 網址
 
     const schools = [
-        '臺北市立大安國民中學', '臺北市立中正國民中學', '臺北市立仁愛國民中學',
-        '臺北市立金華國民中學', '臺北市立龍門國民中學', '新北市立中山國民中學',
-        '新北市立板橋國民中學', '新北市立江翠國民中學', '新北市立海山國民中學',
-        '桃園市立桃園國民中學', '桃園市立青溪國民中學', '桃園市立慈文國民中學'
+        '臺北市立士林國中',
+        '臺北市立介壽國中',
+        '臺北市立石牌國中',
+        '臺北市立金華國中',
+        '臺北市立建成國中',
+        '臺北市立敦化國中',
+        '臺北市立景興國中',
+        '臺北市立龍山國中',
+        '臺北市立麗山國中',
+        '臺北市立蘭雅國中',
+        '新北市立永和國中',
+        '新北市立福和國中'
     ]; // 請在此處修改為您的12所學校全稱
 
     const MAX_ROWS = 20;
@@ -362,7 +370,7 @@
 
         // --- 傳送到 Google Apps Script ---
         try {
-            if (GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+            if (GOOGLE_APPS_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE' || GOOGLE_APPS_SCRIPT_URL === '') {
                 console.log('--- 模擬送出 ---');
                 console.log('若已設定 Google Apps Script URL，此資料將會被傳送：');
                 console.log(JSON.stringify(payload, null, 2));
